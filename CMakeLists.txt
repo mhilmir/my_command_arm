@@ -135,7 +135,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(test_control_node src/test_control.cpp)
-add_executable(joint_pose_check_node src/joint_pose_check.cpp)
+add_executable(check_states_node src/check_states.cpp)
 add_executable(ambil_data_node src/ambil_data.cpp)
 
 ## Rename C++ executable without prefix
@@ -152,7 +152,7 @@ add_executable(ambil_data_node src/ambil_data.cpp)
 target_link_libraries(test_control_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(joint_pose_check_node
+target_link_libraries(check_states_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(ambil_data_node

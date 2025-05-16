@@ -160,20 +160,20 @@ int main(int argc, char **argv)
     
 
     
-    // Kontrol Pose from present //////////////////////////////////////////////
-    double path_time3 = 3.0;
+    // // Kontrol Pose from present //////////////////////////////////////////////
+    // double path_time3 = 3.0;
     
-    goalPose.clear();  goalPose.resize(6, 0.0);
-    goalPose.at(0) = delta * 5;  // x
-    goalPose.at(1) = 0;  // y
-    goalPose.at(2) = -delta * 12;  // z
-    goalPose.at(3) = 0;  // roll
-    goalPose.at(4) = 0;  // pitch
-    goalPose.at(5) = 0;  // yaw
-    setTaskSpacePathFromPresent(nh, goalPose, path_time3);
-    ros::Duration(2.0).sleep();
+    // goalPose.clear();  goalPose.resize(6, 0.0);
+    // goalPose.at(0) = delta * 5;  // x
+    // goalPose.at(1) = 0;  // y
+    // goalPose.at(2) = -delta * 12;  // z
+    // goalPose.at(3) = 0;  // roll
+    // goalPose.at(4) = 0;  // pitch
+    // goalPose.at(5) = 0;  // yaw
+    // setTaskSpacePathFromPresent(nh, goalPose, path_time3);
+    // ros::Duration(2.0).sleep();
     
-    ///////////////////////////////////////////////////////////////////////////
+    // ///////////////////////////////////////////////////////////////////////////
     
     
     

@@ -31,7 +31,7 @@ void kinematicsPoseCallback(const open_manipulator_msgs::KinematicsPose::ConstPt
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "test_control_node");
+    ros::init(argc, argv, "check_states_node");
     ros::NodeHandle nh;
 
     ros::Rate rate(10);
