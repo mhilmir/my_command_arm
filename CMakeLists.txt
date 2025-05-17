@@ -12,6 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -137,6 +141,7 @@ include_directories(
 add_executable(test_control_node src/test_control.cpp)
 add_executable(check_states_node src/check_states.cpp)
 add_executable(ambil_data_node src/ambil_data.cpp)
+add_executable(transform_test_node src/transform_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -150,13 +155,16 @@ add_executable(ambil_data_node src/ambil_data.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(test_control_node
-  ${catkin_LIBRARIES}
+${catkin_LIBRARIES}
 )
 target_link_libraries(check_states_node
-  ${catkin_LIBRARIES}
+${catkin_LIBRARIES}
 )
 target_link_libraries(ambil_data_node
-  ${catkin_LIBRARIES}
+${catkin_LIBRARIES}
+)
+target_link_libraries(transform_test_node
+${catkin_LIBRARIES}
 )
 
 #############

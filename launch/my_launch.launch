@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+
+<launch>
+  <arg name="usb_port"     default="/dev/ttyUSB0"/>
+  <arg name="baud_rate"    default="1000000"/>
+  <arg name="control_period"         default="0.010"/>
+  <arg name="use_platform"           default="true"/>
+
+  <arg name="sim" default="false"/>
+  <!-- <arg name="usb_port" default="/dev/ttyACM0" /> -->
+
+  <node name="open_manipulator_controller" pkg="open_manipulator_controller" type="open_manipulator_controller" 
+    output="screen" args="$(arg usb_port) $(arg baud_rate)">
+    <param name="control_period"       value="$(arg control_period)"/>
+    <param name="using_platform"       value="$(arg use_platform)"/>
+  </node>
+
+  <!-- controller utils -->
+  <include file="$(find open_manipulator_hw)/launch/controller_utils.launch"/>
+
+  <!-- startup move_group related -->
+  <include file="$(find open_manipulator_moveit_config)/launch/move_group.launch"/>
+</launch>

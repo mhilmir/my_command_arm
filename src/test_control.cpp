@@ -137,6 +137,8 @@ int main(int argc, char **argv)
     std::vector<double> gripper_joint;
     double delta = 0.01;
 
+    //////////////////////////////////////////// START EXAMPLES /////////////////////////////////////////////
+
     // Kontrol Joint /////////////////////////////////////////////////////////
     double path_time1 = 2.0;
     
@@ -162,57 +164,57 @@ int main(int argc, char **argv)
     
     
     
-    // // Kontrol Pose from present (position only) /////////////////////////////
-    // double path_time2 = .5;
+    // Kontrol Pose from present (position only) /////////////////////////////
+    double path_time2 = .5;
     
-    // goalPose.clear();  goalPose.resize(3, 0.0);
-    // goalPose.at(0) = delta * 2;  // x
-    // goalPose.at(1) = delta * 2;  // y
-    // goalPose.at(2) = delta * 2;  // z
-    // setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time2);
-    // ros::Duration(2.0).sleep();
+    goalPose.clear();  goalPose.resize(3, 0.0);
+    goalPose.at(0) = delta * 2;  // x
+    goalPose.at(1) = delta * 2;  // y
+    goalPose.at(2) = delta * 2;  // z
+    setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time2);
+    ros::Duration(2.0).sleep();
     
-    // goalPose.clear();  goalPose.resize(3, 0.0);
-    // goalPose.at(0) = -delta * 2;  // x
-    // goalPose.at(1) = -delta * 2;  // y
-    // goalPose.at(2) = -delta * 2;  // z
-    // setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time2);
-    // ros::Duration(2.0).sleep();
+    goalPose.clear();  goalPose.resize(3, 0.0);
+    goalPose.at(0) = -delta * 2;  // x
+    goalPose.at(1) = -delta * 2;  // y
+    goalPose.at(2) = -delta * 2;  // z
+    setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time2);
+    ros::Duration(2.0).sleep();
     
-    // ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
     
     
     
-    // // Kontrol Gripper ///////////////////////////////////////////////////////
-    // gripper_joint.clear();
-    // gripper_joint.push_back(0.01);  // open
-    // setToolControl(nh, gripper_joint);
-    // ros::Duration(2.0).sleep();
+    // Kontrol Gripper ///////////////////////////////////////////////////////
+    gripper_joint.clear();
+    gripper_joint.push_back(0.01);  // open
+    setToolControl(nh, gripper_joint);
+    ros::Duration(2.0).sleep();
     
-    // gripper_joint.clear();
-    // gripper_joint.push_back(-0.01);  // tutup
-    // setToolControl(nh, gripper_joint);
-    // ros::Duration(2.0).sleep();
+    gripper_joint.clear();
+    gripper_joint.push_back(-0.01);  // tutup
+    setToolControl(nh, gripper_joint);
+    ros::Duration(2.0).sleep();
     
     // ///////////////////////////////////////////////////////////////////////////
     
 
 
     
-    // // Kontrol Pose from present //////////////////////////////////////////////
-    // double path_time3 = 3.0;
+    // Kontrol Pose from present //////////////////////////////////////////////
+    double path_time3 = 3.0;
     
-    // goalPose.clear();  goalPose.resize(6, 0.0);
-    // goalPose.at(0) = delta * 5;  // x
-    // goalPose.at(1) = 0;  // y
-    // goalPose.at(2) = -delta * 1;  // z
-    // goalPose.at(3) = 0;  // roll
-    // goalPose.at(4) = 0.3;  // pitch
-    // goalPose.at(5) = 0;  // yaw
-    // setTaskSpacePathFromPresent(nh, goalPose, path_time3);
-    // ros::Duration(2.0).sleep();
+    goalPose.clear();  goalPose.resize(6, 0.0);
+    goalPose.at(0) = delta * 5;  // x
+    goalPose.at(1) = 0;  // y
+    goalPose.at(2) = -delta * 1;  // z
+    goalPose.at(3) = 0;  // roll
+    goalPose.at(4) = -0.3;  // pitch
+    goalPose.at(5) = 0;  // yaw
+    setTaskSpacePathFromPresent(nh, goalPose, path_time3);
+    ros::Duration(2.0).sleep();
     
-    // ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
     
     
 
@@ -222,21 +224,20 @@ int main(int argc, char **argv)
     // double path_time4 = 3.0;
     
     // goalPose.clear();  goalPose.resize(6, 0.0);
-    // goalPose.at(0) = 0.8;  // x
-    // goalPose.at(1) = 0;  // y
-    // goalPose.at(2) = 0.175;  // z
-    // goalPose.at(3) = 0;  // roll
-    // goalPose.at(4) = 0.85;  // pitch
-    // goalPose.at(5) = 0;  // yaw
+    // goalPose.at(0) = 0.135685;  // x
+    // goalPose.at(1) = 0.000190;  // y
+    // goalPose.at(2) = 0.237399;  // z
+    // goalPose.at(3) = -0.000000;  // roll
+    // goalPose.at(4) = 0.019942;  // pitch
+    // goalPose.at(5) = 0.001534;  // yaw
     // setTaskSpacePath(nh, goalPose, path_time4);
     // ros::Duration(2.0).sleep();
+
     
-    // ///////////////////////////////////////////////////////////////////////////
-    
-    
-    
-    
-    
+    ///////////////////////////////////////////////////////////////////////////
+
+
+    //////////////////////////////////////////// END EXAMPLES /////////////////////////////////////////////
     
     
     return 0;
