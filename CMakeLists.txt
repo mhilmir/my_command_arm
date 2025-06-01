@@ -138,10 +138,11 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(test_control_node src/test_control.cpp)
+add_executable(template_control_node src/template_control.cpp)
 add_executable(check_states_node src/check_states.cpp)
 add_executable(ambil_data_node src/ambil_data.cpp)
 add_executable(transform_test_node src/transform_test.cpp)
+add_executable(control_playground_node src/control_playground.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,7 +155,7 @@ add_executable(transform_test_node src/transform_test.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(test_control_node
+target_link_libraries(template_control_node
 ${catkin_LIBRARIES}
 )
 target_link_libraries(check_states_node
@@ -164,6 +165,9 @@ target_link_libraries(ambil_data_node
 ${catkin_LIBRARIES}
 )
 target_link_libraries(transform_test_node
+${catkin_LIBRARIES}
+)
+target_link_libraries(control_playground_node
 ${catkin_LIBRARIES}
 )
 
