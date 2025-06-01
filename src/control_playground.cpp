@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
-
+#include <geometry_msgs/Pose.h>
 #include "open_manipulator_msgs/SetJointPosition.h"
 #include "open_manipulator_msgs/SetKinematicsPose.h"
 #include <tf/transform_datatypes.h>
@@ -92,18 +92,19 @@ int main(int argc, char **argv)
     double roll, pitch, yaw;
     tf::Quaternion q(current_pose.pose.orientation.x, current_pose.pose.orientation.y, current_pose.pose.orientation.z, current_pose.pose.orientation.w);
     tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
-    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, roll, pitch, yaw);
+    // ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, roll, pitch, yaw);
 
-    // target pose:
-    //   position: 
-        double target_x =  0.2876;
-        double target_y =  0.101615;
-        double target_z =  0.292349;
-    //   orientation: 
-    //     x: -0.129675
-    //     y: 0.15495
-    //     z: -0.0180811
-    //     w: 0.979208
+    // target pose objek di kiri
+    geometry_msgs::Pose target_pose;
+    target_pose.position.x = 0.219665;
+    target_pose.position.y = 0.101296;
+    target_pose.position.z = 0.0918007;
+    // orientation: 
+    target_pose.orientation.x = -0.125005;
+    target_pose.orientation.y = 0.548743;
+    target_pose.orientation.z = 0.0369283;
+    target_pose.orientation.w = 0.825767;
+    // roll: -0.425102, pitch: 1.156749, yaw: -0.190560
 
 
     // Get the Error

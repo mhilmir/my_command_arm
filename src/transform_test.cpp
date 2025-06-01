@@ -13,20 +13,20 @@ int main(int argc, char** argv)
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
 
-    // GraspNet output (objek kiri)
-    double translation[3] = {-0.06961557, -0.00540004, 0.207};
-    double rotation_matrix[3][3] = {
-        { 0.07559296, -0.96571505, -0.24835478},
-        { 0.28120205,  0.2596043,  -0.9238674 },
-        { 0.95666665,  0.0,         0.29118532}
-    };
-    // // GraspNet output (objek kanan)
-    // double translation[3] = {0.07676842, -0.01203392,  0.209};
+    // // GraspNet output (objek kiri)
+    // double translation[3] = {-0.06961557, -0.00540004, 0.207};
     // double rotation_matrix[3][3] = {
-    //     {-8.1581585e-02, 9.9666667e-01, -4.3565684e-08},
-    //     {0.0000000e+00 , 4.3711388e-08,  1.0000000e+00},
-    //     { 9.9666667e-01,  8.1581585e-02 ,-3.5660443e-09}
+    //     { 0.07559296, -0.96571505, -0.24835478},
+    //     { 0.28120205,  0.2596043,  -0.9238674 },
+    //     { 0.95666665,  0.0,         0.29118532}
     // };
+    // GraspNet output (objek kanan)
+    double translation[3] = {0.07676842, -0.01203392,  0.209};
+    double rotation_matrix[3][3] = {
+        {-8.1581585e-02, 9.9666667e-01, -4.3565684e-08},
+        {0.0000000e+00 , 4.3711388e-08,  1.0000000e+00},
+        { 9.9666667e-01,  8.1581585e-02 ,-3.5660443e-09}
+    };
     // // GraspNet output (objek atas)
     // double translation[3] = {0.02310542 ,-0.01957639 , 0.264};
     // double rotation_matrix[3][3] = {
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     geometry_msgs::PoseStamped grasp_pose_camera;
     // grasp_pose_camera.header.stamp = ros::Time::now();
     grasp_pose_camera.header.stamp = ros::Time(0);;
-    grasp_pose_camera.header.frame_id = "link5";
+    grasp_pose_camera.header.frame_id = "camera_link_visual";
 
     grasp_pose_camera.pose.position.x = translation[0];
     grasp_pose_camera.pose.position.y = translation[1];
@@ -66,27 +66,30 @@ int main(int argc, char** argv)
     grasp_pose_camera.pose.orientation.z = q.z();
     grasp_pose_camera.pose.orientation.w = q.w();
 
-    // ROS_INFO(grasp_pose_camera.header.frame_id);
-
     // Transform to world frame
     geometry_msgs::PoseStamped grasp_pose_base;
 
     try {
-        // tfBuffer.canTransform("world", grasp_pose_camera.header.frame_id,
-        //                       ros::Time(0), ros::Duration(2.0));
-        // tfBuffer.transform(grasp_pose_camera, grasp_pose_base, "world", ros::Duration(2.0));
+        tfBuffer.canTransform("world", grasp_pose_camera.header.frame_id,
+                              ros::Time(0), ros::Duration(2.0));
+        ros::Duration(1.0).sleep();  // Wait for 1 second to ensure TF is ready
+        tfBuffer.transform(grasp_pose_camera, grasp_pose_base, "world", ros::Duration(2.0));
 
-        // ROS_INFO_STREAM("Transformed pose in world frame:\n" << grasp_pose_base);
+        ROS_INFO_STREAM("Transformed pose in world frame:\n" << grasp_pose_base);
 
-        ros::Time stamp = grasp_pose_camera.header.stamp;
+        tf2::Quaternion q(
+            grasp_pose_base.pose.orientation.x,
+            grasp_pose_base.pose.orientation.y,
+            grasp_pose_base.pose.orientation.z,
+            grasp_pose_base.pose.orientation.w
+        );
 
-        if (tfBuffer.canTransform("real", grasp_pose_camera.header.frame_id, stamp, ros::Duration(2.0))) {
-            ros::Duration(1.0).sleep();  // sleep for 1 second
-            tfBuffer.transform(grasp_pose_camera, grasp_pose_base, "real", ros::Duration(2.0));
-            ROS_INFO_STREAM("Transformed pose in real frame:\n" << grasp_pose_base);
-        } else {
-            ROS_WARN("Transform not available at pose timestamp");
-        }
+        // Convert Quaternion to RPY (roll, pitch, yaw)
+        double roll, pitch, yaw;
+        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+        ROS_INFO("roll: %f, pitch: %f, yaw: %f", roll, pitch, yaw);
+
     }
     catch (tf2::TransformException &ex) {
         ROS_WARN("Transform failed: %s", ex.what());
