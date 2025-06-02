@@ -1,0 +1,38 @@
+OPEN MANIPULATOR
+  - id servo dynamixel itu tersimpan di hardware servonya, bukan di opencr
+  - agar ros dapat komunikasi ke open manipulator, opencr nya kudu di flash yang usb_to_dxl
+  - kalo mau jalanin controller nya open manipulator, posisi open manipulatornya harus bener (bisa dibantu pake tangan) agar servo2nya gaada yg keluar limit
+  - awal dihidupin, kondisi servo gripper gaboleh ngelebihi limit (terlalu nutup atau terlalu buka),
+  - yaa itu sih hukumnya sama kayak aturan yg kalo awal2 keadaan servo gaboleh diluar limit, makanya kan arm juga kalo awal2 kudu di posisikan nahan atau dipegangi biar kondisi servonya ga diluar limit
+  - agar open manipulator langsung posisi siaga saat dihidupin, opencr harus di flash yang turtlebot3_with_open_manipulator (tapi ini ga include usb_to_dxl ya)
+  - kalo ada error failed to open port, /dev/tty... nya kudu di chmod dulu
+
+  - [open manipulator noetic]
+  - dalam noetic ada 2 kontrol yg berbeda, basic & experimental(moveit), kedua kontrol tsb defaultnya terpisah gabisa dipake barengan, (sedangkan kalo yg humble bisa jadi satu / dipake barengan)
+  - untuk moveit, launch file yg moveit rviz gui (joint_trajectory_controller.launch) itu salah port, defaultnya masih ttyUSB0 harusnya ttyACM0
+  - utk kontrol moveit, antara state open & close utk grippernya kebalik, untuk mbenerinnya ada di open_manipulator_controls/open_manipulator_moveit_config/config/open_manipulator.srdf
+  - gerakan close nya sering crash karena melebihi limit. Jadi di file srdf itu juga limitnya diganti (cari limit yg baru berdasarkan percobaan) jadi -0.01 (open) sampai 0.006 (close) (ini di kontrol moveit)
+  - limit tsb memang beda dgn yang urdf nya (open_manipulator_description/urdf/open_manipulator.urdf.xacro) tapi ya gimana lagi keknya memang yg humble lebih solid gaperlu adjust2 kek gini
+  - terus di srdf, yg gripper_sub di comment soalnya ga fungsi, kalo itu ada juga bikin error waktu jalanin kode yg .setNamedTarget("open" atau "close")
+
+ROS
+  - [Untuk Python] Kalo vscode nya gk nemu library-library ROS, dalam directory .vscode buat settings.json lalu tambahin :
+      "python.autoComplete.extraPaths": [
+          "/opt/ros/humble/local/lib/python3.10/dist-packages"  --> ini bisa berbeda di tiap mesin, cari aja pake print(rclpy.__file__)
+      ]
+
+  - [Untuk C++] Sedangkan kalo cpp di file .vscode/c_cpp_properties.json
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/opt/ros/humble/include/**"
+      ]
+  
+  - Tapi tergantung juga extension nya apa, soalnya tiap extension bisa beda-beda
+
+QUADRUPED
+  - kalo ada juga libffi, solusinya: (sesuikan dgn nama env)
+    RUN -> export LD_LIBRARY_PATH=/home/$USERNAME/miniconda3/envs/python3.9-env/lib:$LD_LIBRARY_PATH
+    RUN -> ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 /home/$USERNAME/miniconda3/envs/python3.9-env/lib/libffi.so.7
+  - saat jalanin vision dgn python3.9 ada kemungkinan error 'cv2' has no attribute 'TrackerCSRT_create'
+  - install opencv-contrib-python, atau, coba uninstall terus install lagi
+  
