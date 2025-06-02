@@ -12,6 +12,8 @@
 
 std::vector<double> present_joint_angle_;
 open_manipulator_msgs::KinematicsPose current_pose;
+bool pose_received = false;
+bool joint_received = false;
 
 void jointStatesCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
@@ -25,11 +27,13 @@ void jointStatesCallback(const sensor_msgs::JointState::ConstPtr &msg)
     else if (!msg->name.at(i).compare("joint4"))  temp_angle.at(3) = (msg->position.at(i));
   }
   present_joint_angle_ = temp_angle;
+  joint_received = true;
 }
 
 void kinematicsPoseCallback(const open_manipulator_msgs::KinematicsPose::ConstPtr &msg)
 {
     current_pose = *msg;
+    pose_received = true;
 }
 
 int main(int argc, char **argv)
@@ -44,6 +48,17 @@ int main(int argc, char **argv)
     ros::Subscriber joint_states_sub_ = nh.subscribe("joint_states", 10, jointStatesCallback);
     ros::Subscriber kinematics_pose_sub_ = nh.subscribe("/gripper/kinematics_pose", 10, kinematicsPoseCallback);;
     
+    // Waiting for Joint and Pose Data
+    while(ros::ok()){
+        ros::spinOnce();
+        if (!joint_received || !pose_received){
+            ROS_WARN_THROTTLE(1.0, "Waiting for joint_states and kinematics_pose...");
+            rate.sleep();
+            continue;
+        }
+        break;
+    }
+
     while(ros::ok()){
 
         // double roll, pitch, yaw;
