@@ -15,6 +15,8 @@ OPEN MANIPULATOR
   - limit tsb memang beda dgn yang urdf nya (open_manipulator_description/urdf/open_manipulator.urdf.xacro) tapi ya gimana lagi keknya memang yg humble lebih solid gaperlu adjust2 kek gini
   - terus di srdf, yg gripper_sub di comment soalnya ga fungsi, kalo itu ada juga bikin error waktu jalanin kode yg .setNamedTarget("open" atau "close")
 
+  - di urdf open manipulatornya, tambahin link dan joint buat kamera agar tf nya bisa jalan
+
 ROS
   - [Untuk Python] Kalo vscode nya gk nemu library-library ROS, dalam directory .vscode buat settings.json lalu tambahin :
       "python.autoComplete.extraPaths": [
