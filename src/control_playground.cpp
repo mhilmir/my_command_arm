@@ -116,7 +116,7 @@ void jointStatesCallback(const sensor_msgs::JointState::ConstPtr &msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "test_control_node");
+    ros::init(argc, argv, "control_playground_node");
     ros::NodeHandle nh;
 
     ros::Rate rate(10);
