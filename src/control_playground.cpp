@@ -174,9 +174,9 @@ int main(int argc, char **argv)
     // ///////////////////////////////////////////////////////////////////////////
 
     // target pose objek di kiri (Transformed)
-    target_pose.position.x = 0.219665;
-    target_pose.position.y = 0.101296;
-    target_pose.position.z = 0.0918007;
+    // target_pose.position.x = 0.219665;
+    // target_pose.position.y = 0.101296;
+    // target_pose.position.z = 0.0918007;
     // target_pose.orientation.x = -0.125005;
     // target_pose.orientation.y = 0.548743;
     // target_pose.orientation.z = 0.0369283;
@@ -197,6 +197,13 @@ int main(int argc, char **argv)
     // target_pose.position.x = 0.188347;
     // target_pose.position.y = -0.0415902;
     // target_pose.position.z = 0.0858944;
+
+    // target pose objek Glue Stick (Transformed)
+    // target_pose.position.x = 0.279738;
+    target_pose.position.x = 0.266441;  // coba ini dah, yg asli fail to solve IK
+    target_pose.position.y = -0.0143216;
+    target_pose.position.z = 0.0438075;
+    // target_pose.position.z = 0.055;  // biar ga jedug
 
     ros::spinOnce();
     // Get the Error between current and target
@@ -222,16 +229,27 @@ int main(int argc, char **argv)
     ros::Duration(2.0).sleep();
     // ///////////////////////////////////////////////////////////////////////////
 
-    // Kontrol Pose from present (position only) /////////////////////////////
-    path_time = 4.0;
-    goalPose.clear();  goalPose.resize(3, 0.0);
-    goalPose.at(0) = -x_error;  // x
-    goalPose.at(1) = -y_error;  // y
-    goalPose.at(2) = -z_error;  // z
-    setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time);
+    // // Kontrol Pose from present (position only) /////////////////////////////
+    // path_time = 4.0;
+    // goalPose.clear();  goalPose.resize(3, 0.0);
+    // goalPose.at(0) = -x_error;  // x
+    // goalPose.at(1) = -y_error;  // y
+    // goalPose.at(2) = -z_error;  // z
+    // setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time);
+    // ros::Duration(2.0).sleep();
+    // // ros::spinOnce();
+    // // ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+
+    // Perform Ambil Pose State /////////////////////////////////////////////////////////
+    path_time = 2.0;
+    joint_name.clear();
+    joint_angle.clear();
+    joint_name.push_back("joint1"); joint_angle.push_back(0.00);
+    joint_name.push_back("joint2"); joint_angle.push_back(-0.949534);
+    joint_name.push_back("joint3"); joint_angle.push_back(0.018408);
+    joint_name.push_back("joint4"); joint_angle.push_back(1.780952);
+    setJointSpacePath(joint_name, joint_angle, path_time);
     ros::Duration(2.0).sleep();
-    // ros::spinOnce();
-    // ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
     
     return 0;
 }

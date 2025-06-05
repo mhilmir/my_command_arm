@@ -52,9 +52,6 @@ Orientation Matrix Rotation :
   [-0.773983, 0, 0.633207]
 
 
-
-
-
 HASIL Transformasi Objek di kiri
 [ INFO] [1748787354.959078914]: Transformed pose in world frame:
 header: 
@@ -115,3 +112,25 @@ HASIL Transformasi Objek di bawah
     z: -0.366673
     w: -0.222307
 roll: -2.286119, pitch: 0.269079, yaw: 1.474302
+
+
+# Objek Glue Stick (tapi hasil grasp nya dari samping)
+Grasp: score:0.6386500597000122, width:0.08594149351119995, height:0.019999999552965164, depth:0.029999999329447746, translation:[ 0.04632061 -0.02004719  0.283     ]
+rotation:
+[[ 0.9810783   0.19336247 -0.00981127]
+ [-0.1933528   0.9811274   0.00193362]
+ [ 0.01        0.          0.99995   ]]
+object id:-1
+
+Hasil Transformasi Objek Glue Stick (tapi hasil grasp nya dari samping)
+  position: 
+    x: 0.279738
+    y: -0.0143216
+    z: 0.0438075
+  orientation: 
+    x: 0.727401
+    y: -0.595869
+    z: 0.259941
+    w: -0.219679
+roll: -2.455297, pitch: -0.116627, yaw: -1.414359
+
