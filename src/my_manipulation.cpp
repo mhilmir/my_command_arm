@@ -148,6 +148,71 @@ void graspPoseCallback(const geometry_msgs::Pose::ConstPtr &msg)
     grasp_pose = *msg;
 }
 
+bool moveToFindingPose(nh)
+{
+    ros::spinOnce();  // Get the latest current_pose
+    std::vector<double> goalPose;  goalPose.resize(3, 0.0);
+    double path_time;
+
+    // Find Object Pose //////////////////////////////////////////////////////////////////
+    // Joint States:
+    //     joint1: 1.497165, joint2: -0.948000, joint3: 0.039884, joint4: 1.784020
+    // Position :
+    //     x: 0.016929, y: 0.066817, z: 0.171629
+    // Orientation Quaternion :
+    //     x: -0.288633, y: 0.310708, z: 0.616367, w: 0.663508
+    // Orientation Euler :
+    //     roll: 0.000000, pitch: 0.875903, yaw: 1.497165
+    // Orientation Matrix Rotation :
+    //     [0.0471036, -0.99729, 0.0565065]
+    //     [0.638569, 0.0735645, 0.766041]
+    //     [-0.768122, 0, 0.640303]
+
+    geometry_msgs::Point find_object_position;
+    find_object_position.x = 0.016929;
+    find_object_position.y = 0.066817;
+    find_object_position.z = 0.171629;
+    double find_object_roll = 0.000000;
+    double find_object_pitch = 0.875903;
+    double find_object_yaw = 1.497165;
+    // Perform Find Object Pose /////////////////////////////////////////////////////////
+    path_time = 3.0;
+    goalPose.clear();  goalPose.resize(6, 0.0);
+    goalPose.at(0) = find_object_position.x - current_pose.pose.position.x;  // x
+    goalPose.at(1) = find_object_position.y - current_pose.pose.position.y;  // y
+    goalPose.at(2) = find_object_position.z - current_pose.pose.position.z;  // z
+    goalPose.at(3) = find_object_roll - current_roll;  // roll
+    goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
+    goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
+    if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
+        ROS_INFO("Succeed to plan to Find Object Pose");
+    } else{
+        ROS_ERROR("Failed when planning to Find Object Pose");
+        return false;  // Plan Failed
+    }
+    ros::Duration(2.0).sleep();
+    ros::spinOnce();
+    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+
+    return true;
+}
+
+bool gripperOpen(nh)
+{
+    ros::spinOnce();
+    std::vector<double> gripper_joint;
+    gripper_joint.push_back(0.01);  // open
+    if(setToolControl(nh, gripper_joint)){
+        ROS_INFO("Succed to Fully Open Gripper");
+    } else{
+        ROS_ERROR("Failed to Open Gripper");
+        return false;
+    }
+    ros::Duration(2.0).sleep();
+    ros::spinOnce();
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "my_manipulation_node");
@@ -191,52 +256,54 @@ int main(int argc, char **argv)
         break;
     }
 
-    // Find Object Pose //////////////////////////////////////////////////////////////////
-    // Joint States:
-    //     joint1: 1.497165, joint2: -0.948000, joint3: 0.039884, joint4: 1.784020
-    // Position :
-    //     x: 0.016929, y: 0.066817, z: 0.171629
-    // Orientation Quaternion :
-    //     x: -0.288633, y: 0.310708, z: 0.616367, w: 0.663508
-    // Orientation Euler :
-    //     roll: 0.000000, pitch: 0.875903, yaw: 1.497165
-    // Orientation Matrix Rotation :
-    //     [0.0471036, -0.99729, 0.0565065]
-    //     [0.638569, 0.0735645, 0.766041]
-    //     [-0.768122, 0, 0.640303]
-    geometry_msgs::Point find_object_position;
-    find_object_position.x = 0.016929;
-    find_object_position.y = 0.066817;
-    find_object_position.z = 0.171629;
-    double find_object_roll = 0.000000;
-    double find_object_pitch = 0.875903;
-    double find_object_yaw = 1.497165;
-    // Perform Find Object Pose /////////////////////////////////////////////////////////
-    path_time = 3.0;
-    goalPose.clear();  goalPose.resize(6, 0.0);
-    goalPose.at(0) = find_object_position.x - current_pose.pose.position.x;  // x
-    goalPose.at(1) = find_object_position.y - current_pose.pose.position.y;  // y
-    goalPose.at(2) = find_object_position.z - current_pose.pose.position.z;  // z
-    goalPose.at(3) = find_object_roll - current_roll;  // roll
-    goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
-    goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
-    if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
-        ROS_INFO("Succeed to plan to Find Object Pose");
-    } else{
-        ROS_ERROR("Failed when planning to Find Object Pose");
-        exit(1);  // Plan Failed
-    }
-    ros::Duration(2.0).sleep();
-    ros::spinOnce();
-    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
-    ///////////////////////////////////////////////////////////////////////////////
+    // // Find Object Pose //////////////////////////////////////////////////////////////////
+    // // Joint States:
+    // //     joint1: 1.497165, joint2: -0.948000, joint3: 0.039884, joint4: 1.784020
+    // // Position :
+    // //     x: 0.016929, y: 0.066817, z: 0.171629
+    // // Orientation Quaternion :
+    // //     x: -0.288633, y: 0.310708, z: 0.616367, w: 0.663508
+    // // Orientation Euler :
+    // //     roll: 0.000000, pitch: 0.875903, yaw: 1.497165
+    // // Orientation Matrix Rotation :
+    // //     [0.0471036, -0.99729, 0.0565065]
+    // //     [0.638569, 0.0735645, 0.766041]
+    // //     [-0.768122, 0, 0.640303]
+    // geometry_msgs::Point find_object_position;
+    // find_object_position.x = 0.016929;
+    // find_object_position.y = 0.066817;
+    // find_object_position.z = 0.171629;
+    // double find_object_roll = 0.000000;
+    // double find_object_pitch = 0.875903;
+    // double find_object_yaw = 1.497165;
+    // // Perform Find Object Pose /////////////////////////////////////////////////////////
+    // path_time = 3.0;
+    // goalPose.clear();  goalPose.resize(6, 0.0);
+    // goalPose.at(0) = find_object_position.x - current_pose.pose.position.x;  // x
+    // goalPose.at(1) = find_object_position.y - current_pose.pose.position.y;  // y
+    // goalPose.at(2) = find_object_position.z - current_pose.pose.position.z;  // z
+    // goalPose.at(3) = find_object_roll - current_roll;  // roll
+    // goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
+    // goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
+    // if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
+    //     ROS_INFO("Succeed to plan to Find Object Pose");
+    // } else{
+    //     ROS_ERROR("Failed when planning to Find Object Pose");
+    //     exit(1);  // Plan Failed
+    // }
+    // ros::Duration(2.0).sleep();
+    // ros::spinOnce();
+    // ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+    // ///////////////////////////////////////////////////////////////////////////////
+    if(!moveToFindingPose(nh)) exit(1);  // plan failed
 
-    // Kontrol Gripper Open ///////////////////////////////////////////////////////
-    gripper_joint.clear();
-    gripper_joint.push_back(0.01);  // open
-    setToolControl(nh, gripper_joint);
-    ros::Duration(2.0).sleep();
-    // ///////////////////////////////////////////////////////////////////////////
+    // // Kontrol Gripper Open ///////////////////////////////////////////////////////
+    // gripper_joint.clear();
+    // gripper_joint.push_back(0.01);  // open
+    // setToolControl(nh, gripper_joint);
+    // ros::Duration(2.0).sleep();
+    // // ///////////////////////////////////////////////////////////////////////////
+    if(!gripperOpen(nh)) exit(2);  // gripper failed
 
     ROS_INFO("Waiting for grasp pose");
     while(ros::ok()){
@@ -286,7 +353,7 @@ int main(int argc, char **argv)
     }
     catch (tf2::TransformException &ex) {
         ROS_ERROR("Transform failed: %s", ex.what());
-        exit(2);  // transform failed
+        exit(3);  // transform failed
     }
     
     // // Get the Error between current and target
@@ -312,24 +379,25 @@ int main(int argc, char **argv)
     ros::Duration(2.0).sleep();
     // ///////////////////////////////////////////////////////////////////////////
 
-    // Back to Init Pose
-    path_time = 3.0;
-    goalPose.clear();  goalPose.resize(6, 0.0);
-    goalPose.at(0) = find_object_position.x - current_pose.pose.position.x;  // x
-    goalPose.at(1) = find_object_position.y - current_pose.pose.position.y;  // y
-    goalPose.at(2) = find_object_position.z - current_pose.pose.position.z;  // z
-    goalPose.at(3) = find_object_roll - current_roll;  // roll
-    goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
-    goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
-    if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
-        ROS_INFO("Succeed to plan to Find Object Pose");
-    } else{
-        ROS_ERROR("Failed when planning to Find Object Pose");
-        exit(1);  // Plan Failed
-    }
-    ros::Duration(2.0).sleep();
-    ros::spinOnce();
-    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+    // // Back to Find Object Pose
+    // path_time = 3.0;
+    // goalPose.clear();  goalPose.resize(6, 0.0);
+    // goalPose.at(0) = find_object_position.x - current_pose.pose.position.x;  // x
+    // goalPose.at(1) = find_object_position.y - current_pose.pose.position.y;  // y
+    // goalPose.at(2) = find_object_position.z - current_pose.pose.position.z;  // z
+    // goalPose.at(3) = find_object_roll - current_roll;  // roll
+    // goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
+    // goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
+    // if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
+    //     ROS_INFO("Succeed to plan to Find Object Pose");
+    // } else{
+    //     ROS_ERROR("Failed when planning to Find Object Pose");
+    //     exit(1);  // Plan Failed
+    // }
+    // ros::Duration(2.0).sleep();
+    // ros::spinOnce();
+    // ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+    moveToFindingPose(nh);
 
     return 0;
 }
