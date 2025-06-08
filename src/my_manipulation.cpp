@@ -27,6 +27,7 @@ tf2::Quaternion cur_q;
 bool grasp_pose_received = false;
 double grasp_score, grasp_width, grasp_height, grasp_depth;
 geometry_msgs::Pose grasp_pose;
+geometry_msgs::Point obj_location;
 
 bool setToolControl(ros::NodeHandle& nh, std::vector<double> joint_angle)
 {
@@ -148,7 +149,12 @@ void graspPoseCallback(const geometry_msgs::Pose::ConstPtr &msg)
     grasp_pose = *msg;
 }
 
-bool moveToFindingPose(nh)
+void objLocationCallback(const geometry_msgs::Point::ConstPtr &msg)
+{
+    obj_location = *msg;
+}
+
+bool moveToFindingPose(ros::NodeHandle& nh)
 {
     ros::spinOnce();  // Get the latest current_pose
     std::vector<double> goalPose;  goalPose.resize(3, 0.0);
@@ -197,7 +203,7 @@ bool moveToFindingPose(nh)
     return true;
 }
 
-bool gripperOpen(nh)
+bool gripperOpen(ros::NodeHandle& nh)
 {
     ros::spinOnce();
     std::vector<double> gripper_joint;
@@ -233,6 +239,7 @@ int main(int argc, char **argv)
     ros::Subscriber grasp_height_sub_ = nh.subscribe("/grasp_result/height", 10, graspHeightCallback);
     ros::Subscriber grasp_depth_sub_ = nh.subscribe("/grasp_result/depth", 10, graspDepthCallback);
     ros::Subscriber grasp_pose_sub_ = nh.subscribe("/grasp_result/pose", 10, graspPoseCallback);
+    ros::Subscriber obj_location_sub_ = nh.subscribe("/grasp_obj_location", 10, objLocationCallback);
 
     std::vector<std::string> joint_name;
     std::vector<double> joint_angle;
@@ -320,7 +327,8 @@ int main(int argc, char **argv)
     ROS_INFO("grasp_height: %f\n", grasp_height);
     ROS_INFO("grasp_depth: %f\n", grasp_depth);
     ROS_INFO("grasp_position: x: %f  y: %f  z: %f\n", grasp_pose.position.x,grasp_pose.position.y, grasp_pose.position.z);
-    ROS_INFO("grasp_orientation: x: %f  y: %f  z: %f  w: %f\n", grasp_pose.orientation.x,grasp_pose.orientation.y, grasp_pose.orientation.z, grasp_pose.orientation.w);
+    ROS_INFO("grasp_orientation: x: %f  y: %f  z: %f  w: %f\n", grasp_pose.orientation.x, grasp_pose.orientation.y, grasp_pose.orientation.z, grasp_pose.orientation.w);
+    ROS_INFO("object location: x: %f  y: %f  z: %f\n", obj_location.x, obj_location.y, obj_location.z);
 
     // Create PoseStamped in camera frame
     geometry_msgs::PoseStamped grasp_pose_camera;
