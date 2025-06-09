@@ -448,7 +448,7 @@ int main(int argc, char **argv)
         exit(3);  // transform failed
     }
 
-    if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
+    if(!setTaskSpacePathFromPresent(nh, "before_grasp_pose", 3.0))
         exit(1);
     
     // // Get the Error between current and target
@@ -474,20 +474,20 @@ int main(int argc, char **argv)
     ros::Duration(2.0).sleep();
     // ///////////////////////////////////////////////////////////////////////////
 
-    // if(!moveToInitLeft(nh))
-    //     exit(1); // plan failed
-
-    // if(!moveToHomeLeft(nh))
-    //     exit(1); // plan failed
-
-    // if(!moveYaw90Clockwise())
-    //     exit(1); // plan failed
-
-    // if(!moveToHome(nh))
-    //     exit(1); // plan failed
+    if(!setTaskSpacePathFromPresent(nh, "init_left_pose", 3.0))
+        exit(1);
     
-    // if(!moveToSavePose(nh))
-    //     exit(1);  // plan failed
+    if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
+        exit(1);
+
+    if(!moveYaw90Clockwise())
+        exit(1);
+    
+    if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
+        exit(1);
+
+    if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
+        exit(1);
 
     return 0;
 }
