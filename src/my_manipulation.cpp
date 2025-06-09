@@ -415,19 +415,55 @@ bool moveToFindingPose(ros::NodeHandle& nh)
     return true;
 }
 
-// INIT Hadap Kiri
-// Joint States:
-//   joint1: 1.547787, joint2: 0.013806, joint3: 0.038350, joint4: 0.013806
-// Position :
-//   x: 0.018334, y: 0.275249, z: 0.189387
-// Orientation Quaternion :
-//   x: -0.023047, y: 0.023583, z: 0.698545, w: 0.714806
-// Orientation Euler :
-//   roll: -0.000000, pitch: 0.065961, yaw: 1.547787
-// Orientation Matrix Rotation :
-// [0.0229576, -0.999735, 0.00151651]
-// [0.997561, 0.0230076, 0.0658959]
-// [-0.0659134, -6.93889e-18, 0.997825]
+bool moveToInitLeft(ros::NodeHandle& nh)
+{
+    
+    std::vector<double> goalPose;  goalPose.resize(3, 0.0);
+    double path_time;
+
+    // INIT Hadap Kiri
+    // Joint States:
+    //   joint1: 1.547787, joint2: 0.013806, joint3: 0.038350, joint4: 0.013806
+    // Position :
+    //   x: 0.018334, y: 0.275249, z: 0.189387
+    // Orientation Quaternion :
+    //   x: -0.023047, y: 0.023583, z: 0.698545, w: 0.714806
+    // Orientation Euler :
+    //   roll: -0.000000, pitch: 0.065961, yaw: 1.547787
+    // Orientation Matrix Rotation :
+    // [0.0229576, -0.999735, 0.00151651]
+    // [0.997561, 0.0230076, 0.0658959]
+    // [-0.0659134, -6.93889e-18, 0.997825]
+
+    geometry_msgs::Point custom_home_position;
+    custom_home_position.x = 0.018334;
+    custom_home_position.y = 0.275249;
+    custom_home_position.z = 0.189387;
+    double find_object_roll = -0.000000;
+    double find_object_pitch = 0.065961;
+    // double find_object_yaw = 0.001534;
+    double find_object_yaw = 1.547787;
+    // Perform Home Custom Pose /////////////////////////////////////////////////////////
+    path_time = 3.0;
+    goalPose.clear();  goalPose.resize(6, 0.0);
+    goalPose.at(0) = custom_home_position.x - current_pose.pose.position.x;  // x
+    goalPose.at(1) = custom_home_position.y - current_pose.pose.position.y;  // y
+    goalPose.at(2) = custom_home_position.z - current_pose.pose.position.z;  // z
+    goalPose.at(3) = find_object_roll - current_roll;  // roll
+    goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
+    goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
+    if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
+        ROS_INFO("Succeed to plan to Init Left Pose");
+    } else{
+        ROS_ERROR("Failed when planning to Init Left Pose");
+        return false;  // Plan Failed
+    }
+    ros::Duration(4.0).sleep();
+    ros::spinOnce();
+    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+
+    return true;
+}
 
 bool moveToHomeLeft(ros::NodeHandle& nh)
 {
@@ -467,9 +503,9 @@ bool moveToHomeLeft(ros::NodeHandle& nh)
     goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
     goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
     if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
-        ROS_INFO("Succeed to plan to Custom Home Pose");
+        ROS_INFO("Succeed to plan to Home Left Pose");
     } else{
-        ROS_ERROR("Failed when planning to Custom Home Pose");
+        ROS_ERROR("Failed when planning to Home Left Pose");
         return false;  // Plan Failed
     }
     ros::Duration(4.0).sleep();
@@ -684,6 +720,9 @@ int main(int argc, char **argv)
     setToolControl(nh, gripper_joint);
     ros::Duration(2.0).sleep();
     // ///////////////////////////////////////////////////////////////////////////
+
+    if(!moveToInitLeft(nh))
+        exit(1); // plan failed
 
     if(!moveToHomeLeft(nh))
         exit(1); // plan failed
