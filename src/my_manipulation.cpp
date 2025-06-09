@@ -57,6 +57,39 @@ bool setJointSpacePath(std::vector<std::string> joint_name, std::vector<double> 
     return false;
 }
 
+// Overload Function To Take Pose Name Argument
+bool setJointSpacePath(ros::NodeHandle& nh, std::string pose_name, double path_time)
+{
+    // Load Param
+    std::map<std::string, double> joint_states;
+    std::string param_joint = pose_name + "/joint_states";
+    if (!nh.getParam(param_joint, joint_states)) {
+        ROS_INFO("error when accessing param");
+        return false;
+    }
+    
+    std::vector<std::string> joint_name;
+    std::vector<double> joint_angle;
+    joint_name.clear();
+    joint_angle.clear();
+    joint_name.push_back("joint1"); joint_angle.push_back(joint_states.at("joint1"));
+    joint_name.push_back("joint2"); joint_angle.push_back(joint_states.at("joint2"));
+    joint_name.push_back("joint3"); joint_angle.push_back(joint_states.at("joint3"));
+    joint_name.push_back("joint4"); joint_angle.push_back(joint_states.at("joint4"));
+    if(setJointSpacePath(joint_name, joint_angle, path_time)){
+        ROS_INFO("Succeed to plan to %s", pose_name.c_str());
+    } else{
+        ROS_ERROR("Failed when planning to %s", pose_name.c_str());
+        return false;  // Plan Failed
+    }
+    ros::Duration(path_time*2).sleep();
+    ros::spinOnce();
+    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+
+    return true;
+    
+}
+
 bool setJointSpacePathFromPresent(std::vector<std::string> joint_name, std::vector<double> joint_angle, double path_time)
 {
     open_manipulator_msgs::SetJointPosition srv;
@@ -94,7 +127,7 @@ bool setTaskSpacePathFromPresent(ros::NodeHandle& nh, std::vector<double> kinema
     return false;
 }
 
-// Overload Function
+// Overload Function To Take Pose Name Argument
 bool setTaskSpacePathFromPresent(ros::NodeHandle& nh, std::string pose_name, double path_time)
 {
     // Load Param
@@ -125,7 +158,7 @@ bool setTaskSpacePathFromPresent(ros::NodeHandle& nh, std::string pose_name, dou
         ROS_ERROR("Failed when planning to %s", pose_name.c_str());
         return false;  // Plan Failed
     }
-    ros::Duration(4.0).sleep();
+    ros::Duration(path_time*4/3).sleep();
     ros::spinOnce();
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
 
@@ -208,109 +241,25 @@ void objLocationCallback(const geometry_msgs::Point::ConstPtr &msg)
     obj_location = *msg;
 }
 
-bool moveToFindingPose(ros::NodeHandle& nh)
+// + for Counter Clockwise, - for Clockwise
+bool moveYaw(double value, double path_time)
 {
     std::vector<std::string> joint_name;
     std::vector<double> joint_angle;
-    std::vector<double> goalPose;  goalPose.resize(3, 0.0);
-    double path_time;
 
-    // geometry_msgs::Point find_object_position;
-    // find_object_position.x = 0.016929;
-    // find_object_position.y = 0.066817;
-    // find_object_position.z = 0.171629;
-    // double find_object_roll = 0.000000;
-    // double find_object_pitch = 0.875903;
-    // // double find_object_yaw = 1.497165;
-    // double find_object_yaw = 1.570796;
-    // // Perform Find Object Pose /////////////////////////////////////////////////////////
-    // path_time = 3.0;
-    // goalPose.clear();  goalPose.resize(6, 0.0);
-    // goalPose.at(0) = find_object_position.x - current_pose.pose.position.x;  // x
-    // goalPose.at(1) = find_object_position.y - current_pose.pose.position.y;  // y
-    // goalPose.at(2) = find_object_position.z - current_pose.pose.position.z;  // z
-    // goalPose.at(3) = find_object_roll - current_roll;  // roll
-    // goalPose.at(4) = find_object_pitch - current_pitch;  // pitch
-    // goalPose.at(5) = find_object_yaw - current_yaw;  // yaw
-    // // ROS_INFO("%f - %f = %f\n", find_object_pitch, current_pitch, (find_object_pitch - current_pitch));
-    // // ROS_INFO("goalPose.at(4) : %f\n", goalPose.at(4));
-    // if(setTaskSpacePathFromPresent(nh, goalPose, path_time)){
-    //     ROS_INFO("Succeed to plan to Find Object Pose");
-    // } else{
-    //     ROS_ERROR("Failed when planning to Find Object Pose");
-    //     return false;  // Plan Failed
-    // }
-    // ros::Duration(4.0).sleep();
-    // ros::spinOnce();
-    
-    // Koreksi
-    path_time = 3.5;
     joint_name.clear();
     joint_angle.clear();
-    joint_name.push_back("joint1"); joint_angle.push_back(1.570796);
-    joint_name.push_back("joint2"); joint_angle.push_back(-0.645806);
-    joint_name.push_back("joint3"); joint_angle.push_back(-0.487806);
-    joint_name.push_back("joint4"); joint_angle.push_back(1.935884);
-    if(setJointSpacePath(joint_name, joint_angle, path_time)){
-        ROS_INFO("Succeed to plan to Find Object Pose");
-    } else{
-        ROS_ERROR("Failed when planning to Find Object Pose");
-        return false;  // Plan Failed
-    }
-    ros::Duration(7.0).sleep();
-    ros::spinOnce();
-    
-    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
-
-    return true;
-}
-
-bool moveYaw90CounterClockwise()
-{
-    std::vector<std::string> joint_name;
-    std::vector<double> joint_angle;
-    double path_time;
-
-    path_time = 3.5;
-    joint_name.clear();
-    joint_angle.clear();
-    joint_name.push_back("joint1"); joint_angle.push_back(1.570796);
+    joint_name.push_back("joint1"); joint_angle.push_back(value);
     joint_name.push_back("joint2"); joint_angle.push_back(0.0);
     joint_name.push_back("joint3"); joint_angle.push_back(0.0);
     joint_name.push_back("joint4"); joint_angle.push_back(0.0);
     if(setJointSpacePathFromPresent(joint_name, joint_angle, path_time)){
-        ROS_INFO("Succeed to plan to Move Yaw 90 Counter Clockwise");
+        ROS_INFO("Succeed to plan to Move Yaw for %f rad", value);
     } else{
-        ROS_ERROR("Failed when planning to Move Yaw 90 Counter Clockwise");
+        ROS_ERROR("Failed when planning to Move Yaw for %f rad", value);
         return false;  // Plan Failed
     }
-    ros::Duration(7.0).sleep();
-    ros::spinOnce();
-    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
-    
-    return true;
-}
-
-bool moveYaw90Clockwise()
-{
-    std::vector<std::string> joint_name;
-    std::vector<double> joint_angle;
-    double path_time;
-
-    path_time = 3.5;
-    joint_name.clear();
-    joint_angle.clear();
-    joint_name.push_back("joint1"); joint_angle.push_back(-1.570796);
-    joint_name.push_back("joint2"); joint_angle.push_back(0.0);
-    joint_name.push_back("joint3"); joint_angle.push_back(0.0);
-    joint_name.push_back("joint4"); joint_angle.push_back(0.0);
-    if(setJointSpacePathFromPresent(joint_name, joint_angle, path_time)){
-        ROS_INFO("Succeed to plan to Move Yaw 90 Clockwise");
-    } else{
-        ROS_ERROR("Failed when planning to Move Yaw 90 Clockwise");
-        return false;  // Plan Failed
-    }
-    ros::Duration(7.0).sleep();
+    ros::Duration(path_time*2).sleep();
     ros::spinOnce();
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
     
@@ -387,11 +336,11 @@ int main(int argc, char **argv)
     if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
         exit(1);
 
-    if(!moveYaw90CounterClockwise())
+    if(!moveYaw(1.57, 3.5))
         exit(1);  // plan failed
 
-    if(!moveToFindingPose(nh))
-        exit(1);  // plan failed
+    if(!setJointSpacePath(nh, "find_object_pose_new", 3.5))
+        exit(1);
 
     if(!gripperOpen(nh))
         exit(2);  // gripper failed
@@ -448,6 +397,7 @@ int main(int argc, char **argv)
         exit(3);  // transform failed
     }
 
+    // agar ga failed to solve IK
     if(!setTaskSpacePathFromPresent(nh, "before_grasp_pose", 3.0))
         exit(1);
     
@@ -457,7 +407,7 @@ int main(int argc, char **argv)
     double z_error = grasp_pose_base.pose.position.z - current_pose.pose.position.z;
     
     // Kontrol Pose from present (position only) /////////////////////////////
-    path_time = 4.0;
+    path_time = 3.0;
     goalPose.clear();  goalPose.resize(3, 0.0);
     goalPose.at(0) = x_error;  // x
     goalPose.at(1) = y_error;  // y
@@ -474,17 +424,17 @@ int main(int argc, char **argv)
     ros::Duration(2.0).sleep();
     // ///////////////////////////////////////////////////////////////////////////
 
-    if(!setTaskSpacePathFromPresent(nh, "init_left_pose", 3.0))
+    if(!setJointSpacePath(nh, "init_left_pose", 3.0))
         exit(1);
     
     if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
         exit(1);
 
-    if(!moveYaw90Clockwise())
+    if(!moveYaw(-1.57, 3.5))
         exit(1);
     
-    if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
-        exit(1);
+    // if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
+    //     exit(1);
 
     if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
         exit(1);
