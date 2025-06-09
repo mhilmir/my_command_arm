@@ -1,0 +1,4 @@
+<launch>
+  <rosparam file="$(find my_command_arm)/config/poses.yaml" command="load" />
+  <node pkg="my_command_arm" type="my_manipulation_node" name="my_manipulation_node" output="screen"/>
+</launch>

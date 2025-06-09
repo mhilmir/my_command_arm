@@ -144,6 +144,7 @@ add_executable(ambil_data_node src/ambil_data.cpp)
 add_executable(transform_test_node src/transform_test.cpp)
 add_executable(control_playground_node src/control_playground.cpp)
 add_executable(my_manipulation_node src/my_manipulation.cpp)
+add_executable(test_load_param_node src/test_load_param.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -172,6 +173,9 @@ target_link_libraries(control_playground_node
 ${catkin_LIBRARIES}
 )
 target_link_libraries(my_manipulation_node
+${catkin_LIBRARIES}
+)
+target_link_libraries(test_load_param_node
 ${catkin_LIBRARIES}
 )
 
