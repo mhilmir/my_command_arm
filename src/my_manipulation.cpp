@@ -29,6 +29,7 @@ bool grasp_pose_received = false;
 double grasp_score, grasp_width, grasp_height, grasp_depth;
 geometry_msgs::Pose grasp_pose;
 geometry_msgs::Point obj_location;
+double current_gripper_effort = 0.0;  // sebenere pake effornya joint1, effortnya gripper entah kenapa nol terus
 
 bool setToolControl(ros::NodeHandle& nh, std::vector<double> joint_angle)
 {
@@ -207,6 +208,16 @@ void jointStatesCallback(const sensor_msgs::JointState::ConstPtr &msg)
         else if (!msg->name.at(i).compare("joint4"))  temp_angle.at(3) = (msg->position.at(i));
     }
     present_joint_angle_ = temp_angle;
+
+    for (size_t i = 0; i < msg->name.size(); ++i)
+    {
+        if (msg->name[i] == "joint1")
+        {
+            current_gripper_effort = msg->effort[i];
+            break;
+        }
+    }
+
     joint_received = true;
 }
 
@@ -266,20 +277,63 @@ bool moveYaw(double value, double path_time)
     return true;
 }
 
-bool gripperOpen(ros::NodeHandle& nh)
+bool setGripper(ros::NodeHandle& nh, std::string state)
 {
+    double value;
+    if(state == "open") value = 0.01;
+    else if(state == "close") value = -0.01;
+    else{
+        ROS_ERROR("state argument not valid");
+        return false;
+    }
     ros::spinOnce();
     std::vector<double> gripper_joint;
-    gripper_joint.push_back(0.01);  // open
+    gripper_joint.push_back(value);
     if(setToolControl(nh, gripper_joint)){
-        ROS_INFO("Succed to Fully Open Gripper");
+        ROS_INFO("Succed to %s Gripper", state.c_str());
     } else{
-        ROS_ERROR("Failed to Open Gripper");
+        ROS_ERROR("Failed to %s Gripper", state.c_str());
         return false;
     }
     ros::Duration(2.0).sleep();
     ros::spinOnce();
     return true;
+}
+
+bool closeGripperUntilContact(ros::NodeHandle& nh, double max_effort_threshold = 10.0)
+{
+    ros::Rate rate(10); // 10 Hz
+
+    double gripper_pos = 0.01;    // Start fully open
+    const double step = -0.001;   // Close incrementally
+    const double min_gripper_pos = -0.01;  // fully close
+
+    while (ros::ok() && gripper_pos >= min_gripper_pos)
+    {
+        // Send command to move gripper
+        if (!setToolControl(nh, {gripper_pos}))
+        {
+            ROS_WARN("Failed to move gripper");
+            return false;
+        }
+
+        ros::spinOnce();
+        rate.sleep();
+
+        ROS_INFO("Gripper pos: %.3f, effort: %.3f", gripper_pos, current_gripper_effort);
+
+        // Check if effort exceeds threshold
+        if (std::abs(current_gripper_effort) > max_effort_threshold)
+        {
+            ROS_INFO("Object detected at pos %.3f with effort %.3f", gripper_pos, current_gripper_effort);
+            return true;
+        }
+
+        gripper_pos += step;
+    }
+
+    ROS_WARN("Reached fully closed gripper position without detecting object");
+    return false;
 }
 
 int main(int argc, char **argv)
@@ -338,11 +392,18 @@ int main(int argc, char **argv)
 
     if(!moveYaw(1.57, 3.5))
         exit(1);  // plan failed
+    
+    // // test fungsi gripper adaptive close /////////
+    // if(!setGripper(nh, "open"))
+    //     exit(2);  // gripper faile
+    // closeGripperUntilContact(nh, 25.0);
+    // exit(1);
+    // ///////////////////////////////////////////////
 
     if(!setJointSpacePath(nh, "find_object_pose_new", 3.5))
         exit(1);
 
-    if(!gripperOpen(nh))
+    if(!setGripper(nh, "open"))
         exit(2);  // gripper failed
 
     ROS_INFO("Waiting for grasp pose");
@@ -417,12 +478,8 @@ int main(int argc, char **argv)
     ros::spinOnce();
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
 
-    // Kontrol Gripper Tutup ///////////////////////////////////////////////////////
-    gripper_joint.clear();
-    gripper_joint.push_back(-0.01);  // tutup
-    setToolControl(nh, gripper_joint);
-    ros::Duration(2.0).sleep();
-    // ///////////////////////////////////////////////////////////////////////////
+    if(!setGripper(nh, "close"))
+        exit(2);  // gripper failed
 
     if(!setJointSpacePath(nh, "init_left_pose", 3.0))
         exit(1);
