@@ -391,7 +391,7 @@ int main(int argc, char **argv)
         exit(1);
 
     if(!moveYaw(1.57, 3.5))
-        exit(1);  // plan failed
+        exit(1);
     
     // // test fungsi gripper adaptive close /////////
     // if(!setGripper(nh, "open"))
@@ -404,7 +404,7 @@ int main(int argc, char **argv)
         exit(1);
 
     if(!setGripper(nh, "open"))
-        exit(2);  // gripper failed
+        exit(2);
 
     ROS_INFO("Waiting for grasp pose");
     while(ros::ok()){
@@ -479,7 +479,7 @@ int main(int argc, char **argv)
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
 
     if(!setGripper(nh, "close"))
-        exit(2);  // gripper failed
+        exit(2);
 
     if(!setJointSpacePath(nh, "init_left_pose", 3.0))
         exit(1);
@@ -489,11 +489,14 @@ int main(int argc, char **argv)
 
     if(!moveYaw(-1.57, 3.5))
         exit(1);
-    
-    // if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
-    //     exit(1);
 
     if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
+        exit(1);
+
+    if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
+        exit(1);
+
+    if(!moveYaw(1.57, 3.5))
         exit(1);
 
     return 0;
