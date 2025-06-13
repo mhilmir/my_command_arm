@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
@@ -30,6 +31,7 @@ double grasp_score, grasp_width, grasp_height, grasp_depth;
 geometry_msgs::Pose grasp_pose;
 geometry_msgs::Point obj_location;
 double current_gripper_effort = 0.0;  // sebenere pake effornya joint1, effortnya gripper entah kenapa nol terus
+bool active;  // indicates whether this node should run navigation or wait for manipulation task
 
 bool setToolControl(ros::NodeHandle& nh, std::vector<double> joint_angle)
 {
@@ -252,6 +254,11 @@ void objLocationCallback(const geometry_msgs::Point::ConstPtr &msg)
     obj_location = *msg;
 }
 
+void navmanCallback(const std_msgs::Bool::ConstPtr& msg)
+{
+    active = msg->data;
+}
+
 // + for Counter Clockwise, - for Clockwise
 bool moveYaw(double value, double path_time)
 {
@@ -349,7 +356,9 @@ int main(int argc, char **argv)
     goal_tool_control_client_ = nh.serviceClient<open_manipulator_msgs::SetJointPosition>("goal_tool_control");
     goal_task_space_path_from_present_client_ = nh.serviceClient<open_manipulator_msgs::SetKinematicsPose>("goal_task_space_path_from_present");
     goal_task_space_path_from_present_position_only_client_ = nh.serviceClient<open_manipulator_msgs::SetKinematicsPose>("goal_task_space_path_from_present_position_only");
-
+    
+    ros::Publisher navman_pub_ = nh.advertise<std_msgs::Bool>("/navman_comm", 1);  // navman == navigation manipulation communication indicator
+    ros::Subscriber navman_sub_ = nh.subscribe("/navman_comm", 1, navmanCallback);
     ros::Subscriber kinematics_pose_sub_ = nh.subscribe("/gripper/kinematics_pose", 10, kinematicsPoseCallback);;
     ros::Subscriber joint_states_sub_ = nh.subscribe("joint_states", 10, jointStatesCallback);
     ros::Subscriber grasp_score_sub_ = nh.subscribe("/grasp_result/score", 10, graspScoreCallback);
@@ -366,6 +375,8 @@ int main(int argc, char **argv)
     double delta = 0.01;
     double path_time;
     geometry_msgs::Pose target_pose;
+    std_msgs::Bool navman_msg;
+    active = false;
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
@@ -387,132 +398,160 @@ int main(int argc, char **argv)
     if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
         exit(1);
 
-    // Waiting for the quadruped go to the location
 
-    if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
-        exit(1);
-
-    if(!moveYaw(1.57, 3.5))
-        exit(1);
-
-    if(!setJointSpacePath(nh, "find_object_pose_new", 3.5))
-        exit(1);
-
-    if(!setGripper(nh, "open"))
-        exit(2);
-
-    ROS_INFO("Waiting for grasp pose");
     while(ros::ok()){
-        ros::spinOnce();
-        if(!grasp_pose_received){
+        // Waiting for the quadruped go to the location
+        ROS_INFO("wait for the quadruped finish the navigation_1 goto location job");
+        while(ros::ok() && (active==false)){
+            ROS_INFO("...");  // comment this if the coordination logic succeed
+            ros::spinOnce();
             rate.sleep();
-            continue;
         }
-        ROS_INFO("grasp pose received");
-        break;
+        ROS_INFO("quadruped has been finished the navigation_1 goto location job\n");
+
+        if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
+            exit(1);
+
+        if(!moveYaw(1.57, 3.5))
+            exit(1);
+
+        if(!setJointSpacePath(nh, "find_object_pose_new", 3.5))
+            exit(1);
+
+        if(!setGripper(nh, "open"))
+            exit(2);
+
+        ROS_INFO("Waiting for grasp pose");
+        while(ros::ok()){
+            ros::spinOnce();
+            if(!grasp_pose_received){
+                rate.sleep();
+                continue;
+            }
+            ROS_INFO("grasp pose received");
+            break;
+        }
+        ROS_INFO("grasp_score: %f\n", grasp_score);
+        ROS_INFO("grasp_width: %f\n", grasp_width);
+        ROS_INFO("grasp_height: %f\n", grasp_height);
+        ROS_INFO("grasp_depth: %f\n", grasp_depth);
+        ROS_INFO("grasp_position: x: %f  y: %f  z: %f\n", grasp_pose.position.x,grasp_pose.position.y, grasp_pose.position.z);
+        ROS_INFO("grasp_orientation: x: %f  y: %f  z: %f  w: %f\n", grasp_pose.orientation.x, grasp_pose.orientation.y, grasp_pose.orientation.z, grasp_pose.orientation.w);
+        ROS_INFO("object location: x: %f  y: %f  z: %f\n", obj_location.x, obj_location.y, obj_location.z);
+
+        // Create PoseStamped in camera frame
+        geometry_msgs::PoseStamped grasp_pose_camera;
+        grasp_pose_camera.header.stamp = ros::Time(0);;
+        grasp_pose_camera.header.frame_id = "camera_link_visual";
+        grasp_pose_camera.pose.position.x = grasp_pose.position.x;
+        grasp_pose_camera.pose.position.y = grasp_pose.position.y;
+        grasp_pose_camera.pose.position.z = grasp_pose.position.z;
+        grasp_pose_camera.pose.orientation.x = grasp_pose.orientation.x;
+        grasp_pose_camera.pose.orientation.y = grasp_pose.orientation.y;
+        grasp_pose_camera.pose.orientation.z = grasp_pose.orientation.z;
+        grasp_pose_camera.pose.orientation.w = grasp_pose.orientation.w;
+        // Transform to world frame
+        geometry_msgs::PoseStamped grasp_pose_base;
+        try {
+            tfBuffer.canTransform("world", grasp_pose_camera.header.frame_id, ros::Time(0), ros::Duration(2.0));
+            ros::Duration(1.0).sleep();  // Wait for 1 second to ensure TF is ready
+            tfBuffer.transform(grasp_pose_camera, grasp_pose_base, "world", ros::Duration(2.0));
+            ROS_INFO_STREAM("Transformed pose in world frame:\n" << grasp_pose_base);
+            tf2::Quaternion q(
+                grasp_pose_base.pose.orientation.x,
+                grasp_pose_base.pose.orientation.y,
+                grasp_pose_base.pose.orientation.z,
+                grasp_pose_base.pose.orientation.w
+            );
+            // Convert Quaternion to RPY
+            double grasp_roll_base, grasp_pitch_base, grasp_yaw_base;
+            tf2::Matrix3x3(q).getRPY(grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
+            ROS_INFO("grasp_roll_base: %f, grasp_pitch_base: %f, grasp_yaw_base: %f", grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
+        }
+        catch (tf2::TransformException &ex) {
+            ROS_ERROR("Transform failed: %s", ex.what());
+            exit(3);  // transform failed
+        }
+
+        // agar ga failed to solve IK
+        if(!setTaskSpacePathFromPresent(nh, "before_grasp_pose", 3.0))
+            exit(1);
+        
+        // // Get the Error between current and target
+        double x_error = grasp_pose_base.pose.position.x - current_pose.pose.position.x;
+        double y_error = grasp_pose_base.pose.position.y - current_pose.pose.position.y;
+        double z_error = grasp_pose_base.pose.position.z - current_pose.pose.position.z;
+        
+        // Kontrol Pose from present (position only) /////////////////////////////
+        path_time = 3.0;
+        goalPose.clear();  goalPose.resize(3, 0.0);
+        goalPose.at(0) = x_error;  // x
+        goalPose.at(1) = y_error;  // y
+        goalPose.at(2) = z_error;  // z
+        setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time);
+        ros::Duration(6.0).sleep();
+        ros::spinOnce();
+        ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
+
+        if(!setGripper(nh, "close"))
+            exit(2);
+
+        if(!setJointSpacePath(nh, "init_left_pose", 3.0))
+            exit(1);
+        
+        if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
+            exit(1);
+
+        if(!moveYaw(-1.57, 3.5))
+            exit(1);
+
+        if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
+            exit(1);
+
+        active = false;
+        navman_msg.data = false;
+        navman_pub_.publish(navman_msg);
+        ROS_INFO("handoff to quadruped\n");
+
+        // Waiting for the quadruped back to the initial room
+        ROS_INFO("wait for the quadruped finish the navigation_2 back to init room job");
+        while(ros::ok() && (active==false)){
+            ROS_INFO("...");
+            ros::spinOnce();
+            rate.sleep();
+        }
+        ROS_INFO("quadruped has been finished the navigation_2 back to init room job\n");
+
+        if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
+            exit(1);
+
+        if(!moveYaw(1.57, 3.5))
+            exit(1);
+
+        if(!setTaskSpacePathFromPresent(nh, "place_object_pose", 3.0))
+            exit(1);
+        
+        if(!setGripper(nh, "open"))
+            exit(2);
+
+        if(!setJointSpacePath(nh, "init_left_pose", 3.0))
+            exit(1);
+        
+        if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
+            exit(1);
+        
+        if(!moveYaw(-1.57, 3.5))
+            exit(1);
+
+        if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
+            exit(1);
+        
+        active = false;
+        navman_msg.data = false;
+        navman_pub_.publish(navman_msg);
+        ROS_INFO("handoff to quadruped\n");
+    
     }
-    ROS_INFO("grasp_score: %f\n", grasp_score);
-    ROS_INFO("grasp_width: %f\n", grasp_width);
-    ROS_INFO("grasp_height: %f\n", grasp_height);
-    ROS_INFO("grasp_depth: %f\n", grasp_depth);
-    ROS_INFO("grasp_position: x: %f  y: %f  z: %f\n", grasp_pose.position.x,grasp_pose.position.y, grasp_pose.position.z);
-    ROS_INFO("grasp_orientation: x: %f  y: %f  z: %f  w: %f\n", grasp_pose.orientation.x, grasp_pose.orientation.y, grasp_pose.orientation.z, grasp_pose.orientation.w);
-    ROS_INFO("object location: x: %f  y: %f  z: %f\n", obj_location.x, obj_location.y, obj_location.z);
-
-    // Create PoseStamped in camera frame
-    geometry_msgs::PoseStamped grasp_pose_camera;
-    grasp_pose_camera.header.stamp = ros::Time(0);;
-    grasp_pose_camera.header.frame_id = "camera_link_visual";
-    grasp_pose_camera.pose.position.x = grasp_pose.position.x;
-    grasp_pose_camera.pose.position.y = grasp_pose.position.y;
-    grasp_pose_camera.pose.position.z = grasp_pose.position.z;
-    grasp_pose_camera.pose.orientation.x = grasp_pose.orientation.x;
-    grasp_pose_camera.pose.orientation.y = grasp_pose.orientation.y;
-    grasp_pose_camera.pose.orientation.z = grasp_pose.orientation.z;
-    grasp_pose_camera.pose.orientation.w = grasp_pose.orientation.w;
-    // Transform to world frame
-    geometry_msgs::PoseStamped grasp_pose_base;
-    try {
-        tfBuffer.canTransform("world", grasp_pose_camera.header.frame_id, ros::Time(0), ros::Duration(2.0));
-        ros::Duration(1.0).sleep();  // Wait for 1 second to ensure TF is ready
-        tfBuffer.transform(grasp_pose_camera, grasp_pose_base, "world", ros::Duration(2.0));
-        ROS_INFO_STREAM("Transformed pose in world frame:\n" << grasp_pose_base);
-        tf2::Quaternion q(
-            grasp_pose_base.pose.orientation.x,
-            grasp_pose_base.pose.orientation.y,
-            grasp_pose_base.pose.orientation.z,
-            grasp_pose_base.pose.orientation.w
-        );
-        // Convert Quaternion to RPY
-        double grasp_roll_base, grasp_pitch_base, grasp_yaw_base;
-        tf2::Matrix3x3(q).getRPY(grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
-        ROS_INFO("grasp_roll_base: %f, grasp_pitch_base: %f, grasp_yaw_base: %f", grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
-    }
-    catch (tf2::TransformException &ex) {
-        ROS_ERROR("Transform failed: %s", ex.what());
-        exit(3);  // transform failed
-    }
-
-    // agar ga failed to solve IK
-    if(!setTaskSpacePathFromPresent(nh, "before_grasp_pose", 3.0))
-        exit(1);
-    
-    // // Get the Error between current and target
-    double x_error = grasp_pose_base.pose.position.x - current_pose.pose.position.x;
-    double y_error = grasp_pose_base.pose.position.y - current_pose.pose.position.y;
-    double z_error = grasp_pose_base.pose.position.z - current_pose.pose.position.z;
-    
-    // Kontrol Pose from present (position only) /////////////////////////////
-    path_time = 3.0;
-    goalPose.clear();  goalPose.resize(3, 0.0);
-    goalPose.at(0) = x_error;  // x
-    goalPose.at(1) = y_error;  // y
-    goalPose.at(2) = z_error;  // z
-    setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time);
-    ros::Duration(6.0).sleep();
-    ros::spinOnce();
-    ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
-
-    if(!setGripper(nh, "close"))
-        exit(2);
-
-    if(!setJointSpacePath(nh, "init_left_pose", 3.0))
-        exit(1);
-    
-    if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
-        exit(1);
-
-    if(!moveYaw(-1.57, 3.5))
-        exit(1);
-
-    if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
-        exit(1);
-
-    // Waiting for the quadruped back to the initial room
-
-    if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
-        exit(1);
-
-    if(!moveYaw(1.57, 3.5))
-        exit(1);
-
-    if(!setTaskSpacePathFromPresent(nh, "place_object_pose", 3.0))
-        exit(1);
-    
-    if(!setGripper(nh, "open"))
-        exit(2);
-
-    if(!setJointSpacePath(nh, "init_left_pose", 3.0))
-        exit(1);
-    
-    if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
-        exit(1);
-    
-    if(!moveYaw(-1.57, 3.5))
-        exit(1);
-
-    if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
-        exit(1);
 
     return 0;
 }
