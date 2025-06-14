@@ -403,7 +403,7 @@ int main(int argc, char **argv)
         // Waiting for the quadruped go to the location
         ROS_INFO("wait for the quadruped finish the navigation_1 goto location job");
         while(ros::ok() && (active==false)){
-            ROS_INFO("...");  // comment this if the coordination logic succeed
+            // ROS_INFO("...");  // comment this if the coordination logic succeed
             ros::spinOnce();
             rate.sleep();
         }
@@ -421,7 +421,7 @@ int main(int argc, char **argv)
         if(!setGripper(nh, "open"))
             exit(2);
 
-        ROS_INFO("Waiting for grasp pose");
+        ROS_INFO("Waiting for the grasp pose");
         while(ros::ok()){
             ros::spinOnce();
             if(!grasp_pose_received){
@@ -516,7 +516,7 @@ int main(int argc, char **argv)
         // Waiting for the quadruped back to the initial room
         ROS_INFO("wait for the quadruped finish the navigation_2 back to init room job");
         while(ros::ok() && (active==false)){
-            ROS_INFO("...");
+            // ROS_INFO("...");
             ros::spinOnce();
             rate.sleep();
         }
@@ -528,13 +528,13 @@ int main(int argc, char **argv)
         if(!moveYaw(1.57, 3.5))
             exit(1);
 
-        if(!setTaskSpacePathFromPresent(nh, "place_object_pose", 3.0))
+        if(!setJointSpacePath(nh, "place_object_pose", 3.0))
             exit(1);
         
         if(!setGripper(nh, "open"))
             exit(2);
 
-        if(!setJointSpacePath(nh, "init_left_pose", 3.0))
+        if(!setJointSpacePath(nh, "after_place_pose", 3.0))
             exit(1);
         
         if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
