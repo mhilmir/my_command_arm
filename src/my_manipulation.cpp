@@ -161,7 +161,8 @@ bool setTaskSpacePathFromPresent(ros::NodeHandle& nh, std::string pose_name, dou
         ROS_ERROR("Failed when planning to %s", pose_name.c_str());
         return false;  // Plan Failed
     }
-    ros::Duration(path_time*4/3).sleep();
+    // ros::Duration(path_time*4/3).sleep();
+    ros::Duration(path_time).sleep();
     ros::spinOnce();
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
 
@@ -302,7 +303,7 @@ bool setGripper(ros::NodeHandle& nh, std::string state)
         ROS_ERROR("Failed to %s Gripper", state.c_str());
         return false;
     }
-    ros::Duration(2.0).sleep();
+    ros::Duration(1.5).sleep();
     ros::spinOnce();
     return true;
 }
@@ -413,15 +414,13 @@ int main(int argc, char **argv)
         if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
             exit(1);
 
-        if(!moveYaw(1.57, 3.5))
+        if(!moveYaw(-1.57, 3.5))
             exit(1);
-
-
 
         grasp_motion_succeed = false;
         while(!grasp_motion_succeed){
 
-            if(!setJointSpacePath(nh, "find_object_pose_new", 3.5))
+            if(!setJointSpacePath(nh, "find_object_right_pose", 3.5))
                 exit(1);
 
             if(!setGripper(nh, "open"))
@@ -480,7 +479,7 @@ int main(int argc, char **argv)
             }
 
             // upaya agar ga failed to solve IK
-            if(!setTaskSpacePathFromPresent(nh, "before_grasp_pose", 3.0))
+            if(!setTaskSpacePathFromPresent(nh, "before_grasp_right_pose", 3.0))
                 exit(1);
             
             // // Get the Error between current and target
@@ -502,20 +501,16 @@ int main(int argc, char **argv)
             grasp_pose_received = false;  // reset mechanism for grasp status
         }
 
-
-
-
-
         if(!setGripper(nh, "close"))
             exit(2);
 
-        if(!setJointSpacePath(nh, "init_left_pose", 3.0))
+        if(!setJointSpacePath(nh, "init_right_pose", 3.0))
             exit(1);
         
-        if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
+        if(!setTaskSpacePathFromPresent(nh, "home_right_pose", 3.0))
             exit(1);
 
-        if(!moveYaw(-1.57, 3.5))
+        if(!moveYaw(1.57, 3.5))
             exit(1);
 
         if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
@@ -538,22 +533,22 @@ int main(int argc, char **argv)
         if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
             exit(1);
 
-        if(!moveYaw(1.57, 3.5))
+        if(!moveYaw(-1.57, 3.5))
             exit(1);
 
-        if(!setJointSpacePath(nh, "place_object_pose", 3.0))
+        if(!setJointSpacePath(nh, "place_object_right_pose", 3.0))
             exit(1);
         
         if(!setGripper(nh, "open"))
             exit(2);
 
-        if(!setJointSpacePath(nh, "after_place_pose", 3.0))
+        if(!setJointSpacePath(nh, "after_place_right_pose", 3.0))
             exit(1);
         
-        if(!setTaskSpacePathFromPresent(nh, "home_left_pose", 3.0))
+        if(!setTaskSpacePathFromPresent(nh, "home_right_pose", 3.0))
             exit(1);
         
-        if(!moveYaw(-1.57, 3.5))
+        if(!moveYaw(1.57, 3.5))
             exit(1);
 
         if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
