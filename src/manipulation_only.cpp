@@ -30,7 +30,6 @@ bool grasp_pose_received = false;
 double grasp_score, grasp_width, grasp_height, grasp_depth;
 geometry_msgs::Pose grasp_pose;
 double current_gripper_effort = 0.0;  // sebenere pake effornya joint1, effortnya gripper entah kenapa nol terus
-bool active;  // indicates whether this node should run navigation or wait for manipulation task
 
 bool setToolControl(ros::NodeHandle& nh, std::vector<double> joint_angle)
 {
@@ -249,11 +248,6 @@ void graspPoseCallback(const geometry_msgs::Pose::ConstPtr &msg)
     grasp_pose = *msg;
 }
 
-void navmanCallback(const std_msgs::Bool::ConstPtr& msg)
-{
-    active = msg->data;
-}
-
 // + for Counter Clockwise, - for Clockwise
 bool moveYaw(double value, double path_time)
 {
@@ -340,7 +334,7 @@ bool closeGripperUntilContact(ros::NodeHandle& nh, double max_effort_threshold =
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "my_manipulation_node");
+    ros::init(argc, argv, "manipulation_only_node");
     ros::NodeHandle nh;
 
     ros::Rate rate(10);
@@ -352,8 +346,6 @@ int main(int argc, char **argv)
     goal_task_space_path_from_present_client_ = nh.serviceClient<open_manipulator_msgs::SetKinematicsPose>("goal_task_space_path_from_present");
     goal_task_space_path_from_present_position_only_client_ = nh.serviceClient<open_manipulator_msgs::SetKinematicsPose>("goal_task_space_path_from_present_position_only");
     
-    ros::Publisher navman_pub_ = nh.advertise<std_msgs::Bool>("/navman_comm", 1);  // navman == navigation manipulation communication indicator
-    ros::Subscriber navman_sub_ = nh.subscribe("/navman_comm", 1, navmanCallback);
     ros::Subscriber kinematics_pose_sub_ = nh.subscribe("/gripper/kinematics_pose", 10, kinematicsPoseCallback);;
     ros::Subscriber joint_states_sub_ = nh.subscribe("joint_states", 10, jointStatesCallback);
     ros::Subscriber grasp_score_sub_ = nh.subscribe("/grasp_result/score", 10, graspScoreCallback);
@@ -364,8 +356,6 @@ int main(int argc, char **argv)
 
     std::vector<double> goalPose;
     double path_time;
-    std_msgs::Bool navman_msg;
-    active = false;
     bool grasp_motion_succeed;
 
     tf2_ros::Buffer tfBuffer;
@@ -384,27 +374,11 @@ int main(int argc, char **argv)
 
     if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
         exit(1);
-    
-    if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
+
+    if(!moveYaw(-1.57, 3.5))
         exit(1);
 
-
     while(ros::ok()){
-        // Waiting for the quadruped go to the location
-        ROS_INFO("wait for the quadruped finish the navigation_1 goto location job");
-        while(ros::ok() && (active==false)){
-            // ROS_INFO("...");  // comment this if the coordination logic succeed
-            ros::spinOnce();
-            rate.sleep();
-        }
-        ROS_INFO("quadruped has been finished the navigation_1 goto location job\n");
-
-        if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
-            exit(1);
-
-        if(!moveYaw(-1.57, 3.5))
-            exit(1);
-
         grasp_motion_succeed = false;
         while(!grasp_motion_succeed){
 
@@ -428,7 +402,7 @@ int main(int argc, char **argv)
             ROS_INFO("grasp_width: %f\n", grasp_width);
             ROS_INFO("grasp_height: %f\n", grasp_height);
             ROS_INFO("grasp_depth: %f\n", grasp_depth);
-            ROS_INFO("grasp_position: x: %f  y: %f  z: %f\n", grasp_pose.position.x,grasp_pose.position.y, grasp_pose.position.z);
+            ROS_INFO("grasp_position: x: %f  y: %f  z: %f\n", grasp_pose.position.x, grasp_pose.position.y, grasp_pose.position.z);
             ROS_INFO("grasp_orientation: x: %f  y: %f  z: %f  w: %f\n", grasp_pose.orientation.x, grasp_pose.orientation.y, grasp_pose.orientation.z, grasp_pose.orientation.w);
 
             // Create PoseStamped in camera frame
@@ -458,6 +432,7 @@ int main(int argc, char **argv)
                 // Convert Quaternion to RPY
                 double grasp_roll_base, grasp_pitch_base, grasp_yaw_base;
                 tf2::Matrix3x3(q).getRPY(grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
+                ROS_INFO("grasp_pose_base position: x: %f, y: %f, z: %f", grasp_pose_base.pose.position.x, grasp_pose_base.pose.position.y, grasp_pose_base.pose.position.z);
                 ROS_INFO("grasp_roll_base: %f, grasp_pitch_base: %f, grasp_yaw_base: %f", grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
             }
             catch (tf2::TransformException &ex) {
@@ -503,20 +478,6 @@ int main(int argc, char **argv)
         if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
             exit(1);
 
-        active = false;
-        navman_msg.data = false;
-        navman_pub_.publish(navman_msg);
-        ROS_INFO("handoff to quadruped\n");
-
-        // Waiting for the quadruped back to the initial room
-        ROS_INFO("wait for the quadruped finish the navigation_2 back to init room job");
-        while(ros::ok() && (active==false)){
-            // ROS_INFO("...");
-            ros::spinOnce();
-            rate.sleep();
-        }
-        ROS_INFO("quadruped has been finished the navigation_2 back to init room job\n");
-
         if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
             exit(1);
 
@@ -534,18 +495,6 @@ int main(int argc, char **argv)
         
         if(!setTaskSpacePathFromPresent(nh, "home_right_pose", 3.0))
             exit(1);
-        
-        if(!moveYaw(1.57, 3.5))
-            exit(1);
-
-        if(!setTaskSpacePathFromPresent(nh, "save_pose", 3.0))
-            exit(1);
-        
-        active = false;
-        navman_msg.data = false;
-        navman_pub_.publish(navman_msg);
-        ROS_INFO("handoff to quadruped\n");
-    
     }
 
     return 0;
