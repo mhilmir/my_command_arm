@@ -465,9 +465,9 @@ int main(int argc, char **argv)
                 exit(3);  // transform failed
             }
 
-            // upaya agar ga failed to solve IK
-            if(!setTaskSpacePathFromPresent(nh, "before_grasp_right_pose", 3.0))
-                exit(1);
+            // // upaya agar ga failed to solve IK saat gerakan grasping
+            // if(!setTaskSpacePathFromPresent(nh, "before_grasp_right_pose", 3.0))
+            //     exit(1);
             
             // // Get the Error between current and target
             double x_error = grasp_pose_base.pose.position.x - current_pose.pose.position.x;
