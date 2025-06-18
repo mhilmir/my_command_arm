@@ -7,4 +7,4 @@ source devel/setup.bash
 sudo chmod 777 /dev/ttyACM0
 
 # launch file
-roslaunch my_command_arm my_launch.launch usb_port:=/dev/ttyACM0 baud_rate:=1000000
+roslaunch my_command_arm controller_custom.launch usb_port:=/dev/ttyACM0 baud_rate:=1000000

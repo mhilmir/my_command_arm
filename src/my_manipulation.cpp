@@ -29,7 +29,6 @@ tf2::Quaternion cur_q;
 bool grasp_pose_received = false;
 double grasp_score, grasp_width, grasp_height, grasp_depth;
 geometry_msgs::Pose grasp_pose;
-geometry_msgs::Point obj_location;
 double current_gripper_effort = 0.0;  // sebenere pake effornya joint1, effortnya gripper entah kenapa nol terus
 bool active;  // indicates whether this node should run navigation or wait for manipulation task
 
@@ -250,11 +249,6 @@ void graspPoseCallback(const geometry_msgs::Pose::ConstPtr &msg)
     grasp_pose = *msg;
 }
 
-void objLocationCallback(const geometry_msgs::Point::ConstPtr &msg)
-{
-    obj_location = *msg;
-}
-
 void navmanCallback(const std_msgs::Bool::ConstPtr& msg)
 {
     active = msg->data;
@@ -367,15 +361,9 @@ int main(int argc, char **argv)
     ros::Subscriber grasp_height_sub_ = nh.subscribe("/grasp_result/height", 10, graspHeightCallback);
     ros::Subscriber grasp_depth_sub_ = nh.subscribe("/grasp_result/depth", 10, graspDepthCallback);
     ros::Subscriber grasp_pose_sub_ = nh.subscribe("/grasp_result/pose", 10, graspPoseCallback);
-    ros::Subscriber obj_location_sub_ = nh.subscribe("/grasp_obj_location", 10, objLocationCallback);
 
-    std::vector<std::string> joint_name;
-    std::vector<double> joint_angle;
     std::vector<double> goalPose;
-    std::vector<double> gripper_joint;
-    double delta = 0.01;
     double path_time;
-    geometry_msgs::Pose target_pose;
     std_msgs::Bool navman_msg;
     active = false;
     bool grasp_motion_succeed;
@@ -442,7 +430,6 @@ int main(int argc, char **argv)
             ROS_INFO("grasp_depth: %f\n", grasp_depth);
             ROS_INFO("grasp_position: x: %f  y: %f  z: %f\n", grasp_pose.position.x,grasp_pose.position.y, grasp_pose.position.z);
             ROS_INFO("grasp_orientation: x: %f  y: %f  z: %f  w: %f\n", grasp_pose.orientation.x, grasp_pose.orientation.y, grasp_pose.orientation.z, grasp_pose.orientation.w);
-            ROS_INFO("object location: x: %f  y: %f  z: %f\n", obj_location.x, obj_location.y, obj_location.z);
 
             // Create PoseStamped in camera frame
             geometry_msgs::PoseStamped grasp_pose_camera;
