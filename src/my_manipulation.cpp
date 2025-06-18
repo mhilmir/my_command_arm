@@ -458,6 +458,7 @@ int main(int argc, char **argv)
                 // Convert Quaternion to RPY
                 double grasp_roll_base, grasp_pitch_base, grasp_yaw_base;
                 tf2::Matrix3x3(q).getRPY(grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
+                ROS_INFO("grasp_pose_base position: x: %f, y: %f, z: %f", grasp_pose_base.pose.position.x, grasp_pose_base.pose.position.y, grasp_pose_base.pose.position.z);
                 ROS_INFO("grasp_roll_base: %f, grasp_pitch_base: %f, grasp_yaw_base: %f", grasp_roll_base, grasp_pitch_base, grasp_yaw_base);
             }
             catch (tf2::TransformException &ex) {
