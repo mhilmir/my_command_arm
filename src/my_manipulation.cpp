@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
@@ -353,6 +354,7 @@ int main(int argc, char **argv)
     goal_task_space_path_from_present_position_only_client_ = nh.serviceClient<open_manipulator_msgs::SetKinematicsPose>("goal_task_space_path_from_present_position_only");
     
     ros::Publisher navman_pub_ = nh.advertise<std_msgs::Bool>("/navman_comm", 1);  // navman == navigation manipulation communication indicator
+    ros::Publisher man_status_pub_ = nh.advertise<std_msgs::String>("/man_status", 1);
     ros::Subscriber navman_sub_ = nh.subscribe("/navman_comm", 1, navmanCallback);
     ros::Subscriber kinematics_pose_sub_ = nh.subscribe("/gripper/kinematics_pose", 10, kinematicsPoseCallback);;
     ros::Subscriber joint_states_sub_ = nh.subscribe("joint_states", 10, jointStatesCallback);
@@ -367,6 +369,8 @@ int main(int argc, char **argv)
     std_msgs::Bool navman_msg;
     active = false;
     bool grasp_motion_succeed;
+    std_msgs::String man_status_msg;
+    std::string addition;  // for man_status
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
@@ -394,10 +398,15 @@ int main(int argc, char **argv)
         ROS_INFO("wait for the quadruped finish the navigation_1 goto location job");
         while(ros::ok() && (active==false)){
             // ROS_INFO("...");  // comment this if the coordination logic succeed
+            man_status_msg.data = "STEADY.. Before Grasp";
+            man_status_pub_.publish(man_status_msg);
             ros::spinOnce();
             rate.sleep();
         }
         ROS_INFO("quadruped has been finished the navigation_1 goto location job\n");
+
+        man_status_msg.data = "Prepare Pose for Grasping";
+        man_status_pub_.publish(man_status_msg);
 
         if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
             exit(1);
@@ -405,8 +414,8 @@ int main(int argc, char **argv)
         if(!moveYaw(-1.57, 3.5))
             exit(1);
 
-        grasp_motion_succeed = false;
-        while(!grasp_motion_succeed){
+        grasp_motion_succeed = true;
+        do{
 
             if(!setJointSpacePath(nh, "find_object_right_pose", 3.5))
                 exit(1);
@@ -414,11 +423,17 @@ int main(int argc, char **argv)
             if(!setGripper(nh, "open"))
                 exit(2);
 
+            // Description addition for /man_status
+            if(grasp_motion_succeed) addition = "";
+            else addition = "Failed to Grasping, Try Again..\n";
+
             ROS_INFO("Waiting for the grasp pose");
             while(ros::ok()){
+                man_status_msg.data = addition + "Wait For User Input to Pick Object to be Grasp";
+                man_status_pub_.publish(man_status_msg);
                 ros::spinOnce();
+                rate.sleep();
                 if(!grasp_pose_received){
-                    rate.sleep();
                     continue;
                 }
                 ROS_INFO("grasp pose received");
@@ -466,6 +481,9 @@ int main(int argc, char **argv)
                 exit(3);  // transform failed
             }
 
+            man_status_msg.data = "Arm is Grasping";
+            man_status_pub_.publish(man_status_msg);
+
             // upaya agar ga failed to solve IK saat gerakan grasping
             if(!setTaskSpacePathFromPresent(nh, "before_grasp_right_pose", 3.0))
                 exit(1);
@@ -487,7 +505,7 @@ int main(int argc, char **argv)
             ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
 
             grasp_pose_received = false;  // reset mechanism for grasp status
-        }
+        } while(!grasp_motion_succeed);
 
         if(!setGripper(nh, "close"))
             exit(2);
@@ -513,10 +531,15 @@ int main(int argc, char **argv)
         ROS_INFO("wait for the quadruped finish the navigation_2 back to init room job");
         while(ros::ok() && (active==false)){
             // ROS_INFO("...");
+            man_status_msg.data = "STEADY.. Ready for Object Placement";
+            man_status_pub_.publish(man_status_msg);
             ros::spinOnce();
             rate.sleep();
         }
         ROS_INFO("quadruped has been finished the navigation_2 back to init room job\n");
+
+        man_status_msg.data = "Arm Start to Place The Object";
+        man_status_pub_.publish(man_status_msg);
 
         if(!setTaskSpacePathFromPresent(nh, "home_pose", 3.0))
             exit(1);
@@ -527,6 +550,9 @@ int main(int argc, char **argv)
         if(!setJointSpacePath(nh, "place_object_right_pose", 3.0))
             exit(1);
         
+        man_status_msg.data = "Object Placed";
+        man_status_pub_.publish(man_status_msg);
+
         if(!setGripper(nh, "open"))
             exit(2);
 
