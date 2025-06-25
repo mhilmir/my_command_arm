@@ -85,7 +85,7 @@ bool setJointSpacePath(ros::NodeHandle& nh, std::string pose_name, double path_t
         ROS_ERROR("Failed when planning to %s", pose_name.c_str());
         return false;  // Plan Failed
     }
-    ros::Duration(path_time*2).sleep();
+    ros::Duration(path_time*3/2).sleep();
     ros::spinOnce();
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
 
@@ -273,7 +273,7 @@ bool moveYaw(double value, double path_time)
         ROS_ERROR("Failed when planning to Move Yaw for %f rad", value);
         return false;  // Plan Failed
     }
-    ros::Duration(path_time*2).sleep();
+    ros::Duration(path_time*3/2).sleep();
     ros::spinOnce();
     ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
     
