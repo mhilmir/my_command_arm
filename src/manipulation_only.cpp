@@ -360,6 +360,7 @@ int main(int argc, char **argv)
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
+    geometry_msgs::PoseStamped grasp_pose_base;
 
     // Waiting for Joint and Pose Data
     while(ros::ok()){
@@ -419,7 +420,7 @@ int main(int argc, char **argv)
             grasp_pose_camera.pose.orientation.z = grasp_pose.orientation.z;
             grasp_pose_camera.pose.orientation.w = grasp_pose.orientation.w;
             // Transform to world frame
-            geometry_msgs::PoseStamped grasp_pose_base;
+            // geometry_msgs::PoseStamped grasp_pose_base;
             try {
                 tfBuffer.canTransform("world", grasp_pose_camera.header.frame_id, ros::Time(0), ros::Duration(2.0));
                 ros::Duration(1.0).sleep();  // Wait for 1 second to ensure TF is ready
@@ -442,9 +443,9 @@ int main(int argc, char **argv)
                 exit(3);  // transform failed
             }
 
-            // upaya agar ga failed to solve IK saat gerakan grasping
-            if(!setTaskSpacePathFromPresent(nh, "before_grasp_right_pose", 3.0))
-                exit(1);
+            // // upaya agar ga failed to solve IK saat gerakan grasping
+            // if(!setTaskSpacePathFromPresent(nh, "before_grasp_right_pose", 3.0))
+            //     exit(1);
             
             // // Get the Error between current and target
             double x_error = grasp_pose_base.pose.position.x - current_pose.pose.position.x;
@@ -486,8 +487,24 @@ int main(int argc, char **argv)
         if(!moveYaw(-1.57, 3.5))
             exit(1);
 
-        if(!setJointSpacePath(nh, "place_object_right_pose", 3.0))
-            exit(1);
+        // if(!setJointSpacePath(nh, "place_object_right_pose", 3.0))
+        //     exit(1);
+
+        // Instead of fix, make place_pose the same as grasp_pose
+        // // Get the Error between current and target
+        double x_error = grasp_pose_base.pose.position.x - current_pose.pose.position.x;
+        double y_error = grasp_pose_base.pose.position.y - current_pose.pose.position.y;
+        double z_error = grasp_pose_base.pose.position.z - current_pose.pose.position.z;
+        // Kontrol Pose from present (position only) /////////////////////////////
+        path_time = 3.0;
+        goalPose.clear();  goalPose.resize(3, 0.0);
+        goalPose.at(0) = x_error;  // x
+        goalPose.at(1) = y_error;  // y
+        goalPose.at(2) = z_error;  // z
+        grasp_motion_succeed = setTaskSpacePathFromPresentPositionOnly(nh, goalPose, path_time);
+        ros::Duration(6.0).sleep();
+        ros::spinOnce();
+        ROS_INFO("Pose :\nx: %f, y: %f, z: %f\nroll: %f, pitch: %f, yaw: %f\n", current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z, current_roll, current_pitch, current_yaw);
         
         if(!setGripper(nh, "open"))
             exit(2);
